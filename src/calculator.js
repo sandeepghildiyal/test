@@ -10,14 +10,9 @@ const Calculator = () => {
     const newInputs = [...inputs];
     newInputs[index] = value;
     setInputs(newInputs);
-  };
 
-  const addInputField = () => {
-    setInputs([...inputs, '']);
-  };
-
-  const calculateResult = () => {
-    const expression = inputs.join('');
+    // Calculate result on input change
+    const expression = newInputs.join('');
     try {
       const evalResult = evaluate(expression);
       setResult(evalResult);
@@ -25,9 +20,14 @@ const Calculator = () => {
       setResult('Error');
     }
   };
-  const reset = () =>{
-    setInputs([''])
-    setResult(null)
+
+  const addInputField = () => {
+    setInputs([...inputs, '']);
+  };
+
+  const reset = () => {
+    setInputs(['']);
+    setResult(null);
   };
 
   return (
@@ -43,7 +43,6 @@ const Calculator = () => {
         />
       ))}
       <button onClick={addInputField}>Add Input Field</button>
-      <button onClick={calculateResult}>Calculate</button>
       <button onClick={reset}>Reset</button>
       <div>
         {result !== null && <h2>Result: {result}</h2>}
