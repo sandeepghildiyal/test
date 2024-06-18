@@ -36,14 +36,14 @@ jobs:
           echo "Username: $SSH_USERNAME"
           echo "Key length: ${#SSH_KEY}"
 
-      # - name: Set up SSH
-      #   uses: webfactory/ssh-agent@v0.5.3
-      #   with:
-      #     ssh-private-key: ${{ secrets.SSH_KEY }}
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY }}
 
       - name: Deploy to server
         run: |
-         ssh -o StrictHostKeyChecking=no root@178.128.238.110 << 'EOF'
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} << 'EOF'
           cd test
           git pull origin main
           ./deploy.sh
