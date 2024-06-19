@@ -1,72 +1,40 @@
-name: CI/CD for React App
+name: Staging deployment
 
 on:
   push:
-    branches: [main]
-  workflow_dispatch:
+    tags:
+      - stage-*
 
-permissions:
-  contents: write
-
-jobs:
+jobs: 
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - name: Checkout files    
+        uses: actions/checkout@v2
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v1
         with:
-          node-version: 18
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build Project
-        run: npm run build
-
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          repository: sandeepghildiyal/test
+          tag_with_ref: true
+          tag_with_sha: true
+        
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    
     steps:
       - name: Checkout files    
         uses: actions/checkout@v2
         
       - name: Get tag name
-        id: get_tag
         uses: olegtarasov/get-tag@v2
         
       - name: Install doctl
         uses: digitalocean/action-doctl@v2
         with:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-      
+         
       - name: Provision Droplet and deploy container
-        env:
-          GIT_TAG_NAME: ${{ steps.get_tag.outputs.tag }}
-          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-        run: |
-          # Provision a new DigitalOcean Droplet with the tag
-          doctl compute droplet create "$GIT_TAG_NAME" \
-            --image docker-18-04 \
-            --size s-1vcpu-1gb \
-            --region nyc1 \
-            --tag-name "$GIT_TAG_NAME" \
-            --user-data-file deploy.sh \
-            --wait
-
-          # Wait for the droplet to be ready
-          sleep 60
-
-          # Fetch the new droplet IP
-          DROPLET_IP=$(doctl compute droplet list --tag-name "$GIT_TAG_NAME" --format PublicIPv4 --no-header)
-
-          # Run docker commands on the new droplet
-          ssh -o StrictHostKeyChecking=no root@$DROPLET_IP << 'EOF'
-          cd /path/to/your/app
-          git pull origin main
-          ./deploy.sh
-          EOF
+        run: doctl compute droplet create "$GIT_TAG_NAME" --image docker-18-04 --size s-1vcpu-1gb --region nyc1 --user-data-file deploy.sh --wait
