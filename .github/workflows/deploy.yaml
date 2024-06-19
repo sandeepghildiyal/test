@@ -49,21 +49,24 @@ jobs:
           GIT_TAG_NAME: ${{ steps.get_tag.outputs.tag }}
           DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
         run: |
+          # Provision a new DigitalOcean Droplet with the tag
           doctl compute droplet create "$GIT_TAG_NAME" \
             --image docker-18-04 \
             --size s-1vcpu-1gb \
             --region nyc1 \
+            --tag-name "$GIT_TAG_NAME" \
             --user-data-file deploy.sh \
             --wait
-          
+
           # Wait for the droplet to be ready
           sleep 60
 
           # Fetch the new droplet IP
-          DROPLET_IP=$(doctl compute droplet list --format PublicIPv4 --no-header --tag-name "$GIT_TAG_NAME")
+          DROPLET_IP=$(doctl compute droplet list --tag-name "$GIT_TAG_NAME" --format PublicIPv4 --no-header)
 
           # Run docker commands on the new droplet
-          doctl compute ssh $DROPLET_IP --access-token $DIGITALOCEAN_ACCESS_TOKEN --command "
+          ssh -o StrictHostKeyChecking=no root@$DROPLET_IP << 'EOF'
           cd /path/to/your/app
           git pull origin main
-          ./deploy.sh"
+          ./deploy.sh
+          EOF
