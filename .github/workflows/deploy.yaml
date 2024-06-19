@@ -24,8 +24,8 @@ jobs:
             rm -rf test
             mkdir test
             cd test
-            git clone git@github.com:username/projectname
-            cd projectname
+            git clone git@github.com:sandeepghildiyal/test.git
+            cd test
             npm install
             npm run build
             echo 'Deployment to DigitalOcean finished'
