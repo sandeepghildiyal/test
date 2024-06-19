@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  build_and_deploy:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -27,37 +27,31 @@ jobs:
       - name: Build Project
         run: npm run build
 
-      - name: Debugging output
-        env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
-          SSH_KEY: ${{ secrets.SSH_KEY }}
-        run: |
-          echo "Host: $SSH_HOST"
-          echo "Username: $SSH_USERNAME"
-          echo "Key length: ${#SSH_KEY}"
-          echo "$SSH_KEY" | ssh-keygen -lf -
-
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout files    
+        uses: actions/checkout@v2
+        
+      - name: Get tag name
+        uses: olegtarasov/get-tag@v2
+        
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+      
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.5.3
         with:
           ssh-private-key: ${{ secrets.SSH_KEY }}
 
-      - name: Verify SSH connection
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} "echo 'SSH connection successful'"
-
       - name: Deploy to server
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} << 'EOF'
-          cd test
+          cd /path/to/your/app
           git pull origin main
           ./deploy.sh
           EOF
-
-      # Uncomment the below section if you want to deploy to GitHub Pages
-      # - name: Deploy to GitHub Pages
-      #   uses: JamesIves/github-pages-deploy-action@4.1.0
-      #   with:
-      #     branch: gh-pages
-      #     folder: build
