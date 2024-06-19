@@ -37,14 +37,19 @@ jobs:
           echo "Username: $SSH_USERNAME"
           echo "Key length: ${#SSH_KEY}"
           echo "$SSH_KEY" | ssh-keygen -lf -
-           
+
       - name: Create SSH key
         env:
-          SSH_PRIVATE_KEY:  ${{ secrets.SSH_KEY }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_KEY }}
         run: |
-            echo "$SSH_PRIVATE_KEY" > private.key
-            sudo chmod 400 private.key
+          echo "$SSH_PRIVATE_KEY" > private.key
+          sudo chmod 400 private.key
 
+      - name: Docker Dependencies
+        run: |
+          eval `ssh-agent -s`
+          ssh-add private.key
+          docker compose -f docker/docker-compose-test.yml -p my-project up
 
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.5.3
